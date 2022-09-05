@@ -7,3 +7,4 @@ Functionality Supported
 ### Try out API ??
 Deployed here: https://noteappservice.herokuapp.com/
 
+More details to be uploaded, Android app coming soon on playstore.
