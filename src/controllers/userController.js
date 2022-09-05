@@ -1,0 +1,63 @@
+const userModel = require("../models/user");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { default: mongoose } = require("mongoose");
+
+
+const signUp = async(req, res) => {
+
+    const {username, email, password} = req.body;
+    try {
+        const existingUser = await userModel.findOne({email : email}); // connect to db and check if the entry is present
+
+        if(existingUser) {
+            return res.status(400).json({
+                message: "User Already Exists"
+            });
+        }
+
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        const result = await userModel.create({
+            email : email,
+            password : hashPassword,
+            userName : username
+        });
+        
+        const token = jwt.sign({email : result.email, id: result._id}, process.env.SECRET_KEY);
+        return res.status(201).json({user : result, token : token});
+
+    } catch(error) {
+        console.log(error);
+        res.status(500).json({message : "Something went wrong"});
+    }
+}
+
+const signIn = async(req, res) => {
+
+    const {email, password} = req.body;
+
+    try {
+        const existingUser = await userModel.findOne({ email : email });
+
+        if(!existingUser) {
+            return res.status(404).json( {message : "User not found" });
+        }
+
+        const matchPassword = await bcrypt.compare(password, existingUser.password);
+
+        if(!matchPassword) {
+            return res.status(400).json({ message : "Invalid credentials"});
+        }
+
+        const token = jwt.sign({email : existingUser.email, id : existingUser._id}, process.env.SECRET_KEY);
+        res.status(200).json({user: existingUser, token : token})
+
+    } catch(error) {
+        console.log(error);
+        res.status(500).json({ message : "Something went wrong" });
+    }
+    
+}
+
+module.exports = {signUp, signIn}
